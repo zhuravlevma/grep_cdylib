@@ -6,17 +6,19 @@ struct Config {
     filename: String,
 }
 
+impl Config {
+    fn new(args: &[String]) -> Config {
+        let search_string = args[1].clone();
+        let filename = args[2].clone();
+        Config {search_string, filename}
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let config = parse_config(&args);
+    let config = Config::new(&args);
 
     let content = fs::read_to_string(config.filename)
         .expect("Oops");
     println!("{:?}", content);
-}
-
-fn parse_config(args: &[String]) -> Config {
-    let search_string = args[1].clone();
-    let filename = args[2].clone();
-    Config {search_string, filename}
 }
