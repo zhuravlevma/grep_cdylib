@@ -9,12 +9,17 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() < 3 {
-            return Err("Arguments length must be 3");
-        }
-        let query = args[1].clone();
-        let filename = args[2].clone();
+    pub fn new(mut args: std::env::Args) -> Result<Config, &'static str> {
+        args.next(); // skip program name
+
+        let query = match args.next() {
+            None => return Err("query not received"),
+            Some(value) => value
+        };
+        let filename = match args.next() {
+            None => return Err("filename not received"),
+            Some(value) => value
+        };
 
         let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
         Ok(Config {query, filename, case_sensitive })
