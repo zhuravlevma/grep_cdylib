@@ -8,6 +8,9 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.58"
 readme = "README.md"
 repository = "https://github.com/zhuravlevma/grep"
+keywords = ["cdylib", "staticlib", "grep", "c_library", "c_interface"]
+categories = ["Command line utilities"]
+homepage = "https://github.com/zhuravlevma/grep"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
