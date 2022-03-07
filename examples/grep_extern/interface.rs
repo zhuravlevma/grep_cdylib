@@ -16,11 +16,9 @@ pub enum GetStrResult {
 #[derive(Clone)]
 pub struct Functions {
     pub size: usize,
-    pub get_integer: GetInteger,
     pub search_string: SearchString,
 }
 
-pub type GetInteger = unsafe extern "C" fn() -> i32;
 pub type FunctionsFn = unsafe extern "C" fn() -> Functions;
 pub type SearchString = unsafe extern "C" fn(
     *mut u8,

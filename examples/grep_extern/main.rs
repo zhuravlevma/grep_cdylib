@@ -17,7 +17,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let lib = libloading::Library::new(lib_path())?;
         Lib::new(lib)?
     };
-    let _num = unsafe { lib.get_integer() };
     let result = unsafe { lib.search_string("Ha", "Hahaha\n HjHo\n HoHaha\n ") };
     println!("{:?}", result);
     Ok(())
@@ -53,10 +52,6 @@ impl Lib {
             lib: Arc::new(lib),
             functions,
         })
-    }
-
-    pub unsafe fn get_integer(&self) -> i32 {
-        (self.functions.get_integer)()
     }
 
     pub unsafe fn search_string(&self, query: &str, content: &str) -> Vec<String> {
