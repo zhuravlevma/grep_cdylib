@@ -10,7 +10,7 @@ readme = "README.md"
 repository = "https://github.com/zhuravlevma/grep"
 keywords = ["cdylib", "staticlib", "grep", "c_library", "c_interface"]
 categories = ["Command line utilities"]
-homepage = "https://github.com/zhuravlevma/grep"
+homepage = "https://github.com/zhuravlevma/grep_cdylib"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
