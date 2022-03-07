@@ -1,5 +1,5 @@
 [package]
-name = "minigrep"
+name = "grep_cdylib"
 version = "0.1.0"
 edition = "2021"
 authors = ["Zhuravlev Maksim <monge.gaspard.1746@gmail.com>"]
