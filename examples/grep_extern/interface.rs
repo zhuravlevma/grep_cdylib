@@ -29,7 +29,6 @@ pub type SearchString = unsafe extern "C" fn(
     *const c_char,
     *const c_char,
 ) -> GetStrResult;
-
 pub type SearchWithCaseInsensitive = unsafe extern "C" fn(
     *mut u8,
     size: *mut usize,
@@ -37,12 +36,10 @@ pub type SearchWithCaseInsensitive = unsafe extern "C" fn(
     *const c_char,
     *const c_char,
 ) -> GetStrResult;
-
 #[repr(C)]
 pub struct Config {
     pub query: String,
     pub filename: String,
     pub case_sensitive: bool,
 }
-
 type Run = extern "C" fn(*const Config) -> ();

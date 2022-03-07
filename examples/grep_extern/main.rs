@@ -29,7 +29,6 @@ impl GrepFactory {
             let lib = libloading::Library::new(lib_path())?;
             Lib::new(lib)?
         };
-
         Ok(Self { lib })
     }
 
