@@ -1,40 +1,47 @@
-use std::error::Error;
-use std::{fs, mem};
 use std::env;
-use std::os::raw::{c_char};
-use std::ffi::{CStr, CString};
+use std::error::Error;
+use std::ffi::CStr;
+use std::fs;
+use std::os::raw::c_char;
 use std::slice;
 
 #[no_mangle]
 pub extern "C" fn get_my_integer() -> i32 {
     45
 }
+
 #[no_mangle]
-pub unsafe extern "C" fn search_func(buffer: *mut u8, size: *mut usize, query: *const c_char, content: *const c_char) -> GetStrResult {
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn search_func(
+    buffer: *mut u8,
+    size: *mut usize,
+    num: usize,
+    query: *const c_char,
+    content: *const c_char,
+) -> GetStrResult {
     let c_str_query = CStr::from_ptr(query);
     let c_str_content = CStr::from_ptr(content);
     let query_str = c_str_query.to_str().unwrap();
     let content_str = c_str_content.to_str().unwrap();
-    // println!("{}", size as usize);
     let res = search(query_str, content_str);
-    // let bytes = res.as_bytes();
-    let required_size: usize = res.iter().map(|el| el.to_string().as_bytes().len()).sum();
-    if *size < required_size {
-        *size = required_size;
-        return GetStrResult::BufferTooSmall;
-    }
-    // let mut str_vec = vec![];
-    // res.iter().for_each(|el| {
-    //     let length = el.as_bytes().len();
-    //     let slice = *slice::from_raw_parts_mut(buffer as *mut u8, length);
-    //     str_vec.push(slice)
-    // });
-    // let slice = slice::from_raw_parts_mut(buffer as *mut u8, required_size);
-    // slice.copy_from_slice(&str_vec[1..]);
-    println!("{:?}", res);
-    GetStrResult::Ok
-}
+    let elem = res.get(num);
+    return match elem {
+        None => GetStrResult::End,
+        Some(elem) => {
+            let s = elem.to_string();
+            let bytes = s.as_bytes();
+            let required_size = bytes.len();
+            if *size < required_size {
+                *size = required_size;
+                return GetStrResult::BufferTooSmall;
+            }
+            let slice = slice::from_raw_parts_mut(buffer as *mut u8, required_size);
+            slice.copy_from_slice(bytes);
 
+            GetStrResult::Ok
+        }
+    };
+}
 
 #[repr(C)]
 pub struct Config {
@@ -43,9 +50,14 @@ pub struct Config {
     case_sensitive: bool,
 }
 
-
 type GetInteger = unsafe extern "C" fn() -> i32;
-type SearchString = unsafe extern "C" fn(*mut u8, size: *mut usize, *const c_char, *const c_char) -> GetStrResult;
+type SearchString = unsafe extern "C" fn(
+    *mut u8,
+    size: *mut usize,
+    num: usize,
+    *const c_char,
+    *const c_char,
+) -> GetStrResult;
 #[allow(unused)]
 #[repr(C)]
 pub struct FunctionsBlock {
@@ -58,15 +70,15 @@ pub struct FunctionsBlock {
 pub enum GetStrResult {
     Ok = 0,
     BufferTooSmall = 1,
+    End = 3,
 }
-
 
 impl Default for FunctionsBlock {
     fn default() -> Self {
         Self {
             size: std::mem::size_of::<Self>(),
             get_integer: get_my_integer,
-            search_string: search_func
+            search_string: search_func,
         }
     }
 }
@@ -82,27 +94,36 @@ impl Config {
 
         let query = match args.next() {
             None => return Err("query not received"),
-            Some(value) => value
+            Some(value) => value,
         };
         let filename = match args.next() {
             None => return Err("filename not received"),
-            Some(value) => value
+            Some(value) => value,
         };
 
         let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
-        Ok(Config {query, filename, case_sensitive })
+        Ok(Config {
+            query,
+            filename,
+            case_sensitive,
+        })
     }
 }
 
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    contents.lines().filter(|line| line.contains(query)).collect()
+    contents
+        .lines()
+        .filter(|line| line.contains(query))
+        .collect()
 }
 
 pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     let query = query.to_lowercase();
-    contents.lines().filter(|line| line.to_lowercase().contains(&query)).collect()
+    contents
+        .lines()
+        .filter(|line| line.to_lowercase().contains(&query))
+        .collect()
 }
-
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let content = fs::read_to_string(config.filename)?;
@@ -129,10 +150,7 @@ Rust:
 safe, productive, fast
 Pick three.
         ";
-        assert_eq!(
-            vec!["safe, productive, fast"],
-            search(query, contents)
-        )
+        assert_eq!(vec!["safe, productive, fast"], search(query, contents))
     }
     #[test]
     fn case_insensitive() {

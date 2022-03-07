@@ -1,10 +1,10 @@
 mod interface;
 
-use std::ffi::{CString};
-use std::sync::Arc;
+use interface::GetStrResult;
+use interface::{lib_path, Functions, FunctionsFn};
 use libloading::Library;
-use interface::{lib_path, FunctionsFn, Functions};
-use crate::interface::GetStrResult;
+use std::ffi::CString;
+use std::sync::Arc;
 
 #[derive(Clone)]
 struct Lib {
@@ -17,9 +17,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let lib = libloading::Library::new(lib_path())?;
         Lib::new(lib)?
     };
-    let num = unsafe { lib.get_integer() };
+    let _num = unsafe { lib.get_integer() };
     let result = unsafe { lib.search_string("Ha", "Hahaha\n HjHo\n HoHaha\n ") };
-    println!("{}", num);
+    println!("{:?}", result);
     Ok(())
 }
 
@@ -36,10 +36,6 @@ impl GrepFactory {
 
         Ok(Self { lib })
     }
-    //
-    // pub fn get_grep() -> Result<Image, anyhow::Error> {
-    //
-    // }
 }
 
 impl Lib {
@@ -63,16 +59,45 @@ impl Lib {
         (self.functions.get_integer)()
     }
 
-    pub unsafe fn search_string(&self, query: &str, content: &str) -> () {
-        let query =  CString::new(query.as_bytes()).unwrap();
+    pub unsafe fn search_string(&self, query: &str, content: &str) -> Vec<String> {
+        let query = CString::new(query.as_bytes()).unwrap();
         let content = CString::new(content.as_bytes()).unwrap();
         let mut buf = Vec::new();
         let mut size = buf.len();
-        let mut result = (self.functions.search_string)(buf.as_mut_ptr(), &mut size, query.as_ptr(), content.as_ptr());
-        if let GetStrResult::BufferTooSmall = result {
-            buf.resize(size, 0);
-            unsafe { (self.functions.search_string)(buf.as_mut_ptr(), &mut size, query.as_ptr(), content.as_ptr()) };
+        let mut count = 0;
+        let mut res = vec![];
+        loop {
+            let result = (self.functions.search_string)(
+                buf.as_mut_ptr(),
+                &mut size,
+                count,
+                query.as_ptr(),
+                content.as_ptr(),
+            );
+            match result {
+                GetStrResult::Ok => {
+                    let c_str = String::from_utf8(buf).unwrap();
+                    res.push(c_str);
+                    buf = Vec::new();
+                    size = buf.len();
+                }
+                GetStrResult::BufferTooSmall => {
+                    buf.resize(size, 0);
+                    (self.functions.search_string)(
+                        buf.as_mut_ptr(),
+                        &mut size,
+                        count,
+                        query.as_ptr(),
+                        content.as_ptr(),
+                    );
+                    continue;
+                }
+                GetStrResult::End => {
+                    break;
+                }
+            }
+            count += 1;
         }
-
+        res
     }
 }
