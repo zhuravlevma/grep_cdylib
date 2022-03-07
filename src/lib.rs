@@ -1,24 +1,38 @@
 use std::error::Error;
-use std::fs;
+use std::{fs, mem};
 use std::env;
 use std::os::raw::{c_char};
 use std::ffi::{CStr, CString};
+use std::slice;
 
 #[no_mangle]
 pub extern "C" fn get_my_integer() -> i32 {
     45
 }
 #[no_mangle]
-pub extern "C" fn search_func(query: &Query, content: &Content) -> *const *const c_char {
-    let s = unsafe { CStr::from_ptr(query.0) };
-    let query = s.to_str().unwrap();
-    let s = unsafe { CStr::from_ptr(content.0) };
-    let content = s.to_str().unwrap();
-    let res: Vec<*const c_char> = search(query, content).iter().by_ref().map(|el| {
-        let a = CString::new(el.as_bytes()).unwrap();
-         a.as_ptr()
-    }).collect();
-    res.as_ptr()
+pub unsafe extern "C" fn search_func(buffer: *mut u8, size: *mut usize, query: *const c_char, content: *const c_char) -> GetStrResult {
+    let c_str_query = CStr::from_ptr(query);
+    let c_str_content = CStr::from_ptr(content);
+    let query_str = c_str_query.to_str().unwrap();
+    let content_str = c_str_content.to_str().unwrap();
+    // println!("{}", size as usize);
+    let res = search(query_str, content_str);
+    // let bytes = res.as_bytes();
+    let required_size: usize = res.iter().map(|el| el.to_string().as_bytes().len()).sum();
+    if *size < required_size {
+        *size = required_size;
+        return GetStrResult::BufferTooSmall;
+    }
+    // let mut str_vec = vec![];
+    // res.iter().for_each(|el| {
+    //     let length = el.as_bytes().len();
+    //     let slice = *slice::from_raw_parts_mut(buffer as *mut u8, length);
+    //     str_vec.push(slice)
+    // });
+    // let slice = slice::from_raw_parts_mut(buffer as *mut u8, required_size);
+    // slice.copy_from_slice(&str_vec[1..]);
+    println!("{:?}", res);
+    GetStrResult::Ok
 }
 
 
@@ -31,7 +45,7 @@ pub struct Config {
 
 
 type GetInteger = unsafe extern "C" fn() -> i32;
-type SearchString = for<'a> unsafe extern "C" fn(&'a Query, &'a Content) -> *const *const c_char;
+type SearchString = unsafe extern "C" fn(*mut u8, size: *mut usize, *const c_char, *const c_char) -> GetStrResult;
 #[allow(unused)]
 #[repr(C)]
 pub struct FunctionsBlock {
@@ -40,11 +54,12 @@ pub struct FunctionsBlock {
     search_string: SearchString,
 }
 
-#[repr(transparent)]
-pub struct Query(*const c_char);
+#[repr(u8)]
+pub enum GetStrResult {
+    Ok = 0,
+    BufferTooSmall = 1,
+}
 
-#[repr(transparent)]
-pub struct Content(*const c_char);
 
 impl Default for FunctionsBlock {
     fn default() -> Self {
@@ -133,9 +148,6 @@ Trust me.";
         )
     }
 }
-
-mod c_facade;
-
 // impl<'a> TryFrom<&'a Content> for &'a String {
 //     type Error = ImageError;
 //

@@ -4,7 +4,7 @@ use std::ffi::{CString};
 use std::sync::Arc;
 use libloading::Library;
 use interface::{lib_path, FunctionsFn, Functions};
-use crate::interface::{Content, Query};
+use crate::interface::GetStrResult;
 
 #[derive(Clone)]
 struct Lib {
@@ -18,6 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Lib::new(lib)?
     };
     let num = unsafe { lib.get_integer() };
+    let result = unsafe { lib.search_string("Ha", "Hahaha\n HjHo\n HoHaha\n ") };
     println!("{}", num);
     Ok(())
 }
@@ -62,10 +63,16 @@ impl Lib {
         (self.functions.get_integer)()
     }
 
-    // pub unsafe fn search_string<'a>(&self, query: &'a str, content: &str) -> Vec<&'a str> {
-    //     let query = Query(CString::new(query).unwrap().as_ptr());
-    //     let content = Content(CString::new(content).unwrap().as_ptr());
-    //
-    //     let mut res = (self.functions.search_string)(&query, &content);
-    // }
+    pub unsafe fn search_string(&self, query: &str, content: &str) -> () {
+        let query =  CString::new(query.as_bytes()).unwrap();
+        let content = CString::new(content.as_bytes()).unwrap();
+        let mut buf = Vec::new();
+        let mut size = buf.len();
+        let mut result = (self.functions.search_string)(buf.as_mut_ptr(), &mut size, query.as_ptr(), content.as_ptr());
+        if let GetStrResult::BufferTooSmall = result {
+            buf.resize(size, 0);
+            unsafe { (self.functions.search_string)(buf.as_mut_ptr(), &mut size, query.as_ptr(), content.as_ptr()) };
+        }
+
+    }
 }
