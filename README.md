@@ -1,5 +1,7 @@
 # Mini-grep rust app
-minigrep rust app with c dynamic interface
+This is minigrep library who allow search for occurrences of words with/without case insensitive.
+The library provides interface for C application use for this libloading crate.
+The folder "example"  has safe fasade for call C functions
 
 ## License
 
