@@ -32,7 +32,33 @@ pub unsafe extern "C" fn search_func(
     let query_str = c_str_query.to_str().unwrap();
     let content_str = c_str_content.to_str().unwrap();
     let res = search(query_str, content_str);
-    let elem = res.get(num);
+    send_array_with_strings(res, num, size, buffer)
+}
+
+#[no_mangle]
+#[allow(clippy::missing_safety_doc)]
+pub unsafe extern "C" fn search_with_insensitive(
+    buffer: *mut u8,
+    size: *mut usize,
+    num: usize,
+    query: *const c_char,
+    content: *const c_char,
+) -> GetStrResult {
+    let c_str_query = CStr::from_ptr(query);
+    let c_str_content = CStr::from_ptr(content);
+    let query_str = c_str_query.to_str().unwrap();
+    let content_str = c_str_content.to_str().unwrap();
+    let res = search_case_insensitive(query_str, content_str);
+    send_array_with_strings(res, num, size, buffer)
+}
+
+unsafe fn send_array_with_strings(
+    data: Vec<&str>,
+    index: usize,
+    size: *mut usize,
+    buffer: *mut u8,
+) -> GetStrResult {
+    let elem = data.get(index);
     return match elem {
         None => GetStrResult::End,
         Some(elem) => {

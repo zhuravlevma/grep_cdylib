@@ -15,3 +15,8 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     }
     Ok(())
 }
+
+pub unsafe extern "C" fn run_c(config: *const Config) {
+    let config = &*config;
+    run(config.clone()).unwrap()
+}

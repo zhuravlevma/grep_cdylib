@@ -1,6 +1,7 @@
 use std::env;
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct Config {
     pub query: String,
     pub filename: String,
@@ -8,7 +9,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(mut args: std::env::Args) -> Result<Config, &'static str> {
+    pub fn _new(mut args: std::env::Args) -> Result<Config, &'static str> {
         args.next(); // skip program name
 
         let query = match args.next() {

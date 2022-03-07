@@ -1,0 +1,52 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  build:
+    name: Build application
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: cargo build --verbose
+  fmt_check:
+    name: Check format by Cargo FMT
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Fmt
+        run: rustup component add rustfmt
+      - name: Check format in application
+        run: cargo fmt -- --check
+  clippy_check:
+    name: Check format by Cargo Clippy
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: rustup component add clippy
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
+
+  run_tests:
+    name: Run tests
+    needs:
+      - clippy_check
+      - fmt_check
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: cargo test --verbose
